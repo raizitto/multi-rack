@@ -337,11 +337,13 @@ private:
         saveDialog->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
         addAndMakeVisible (*saveDialog);
         saveDialog->setCentrePosition (getLocalBounds().getCentre());
-        saveDialog->enterModalState (true, juce::ModalCallbackFunction::create ([this] (int result)
+        juce::Component::SafePointer<RackContent> safe (this);
+        saveDialog->enterModalState (true, juce::ModalCallbackFunction::create ([safe] (int result)
         {
-            if (result == 1 && saveDialog != nullptr)
-                proc.getPresets().saveUser (saveDialog->getTextEditorContents ("name"));
-            juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<RackContent> (this)]
+            if (safe == nullptr) return;
+            if (result == 1 && safe->saveDialog != nullptr)
+                safe->proc.getPresets().saveUser (safe->saveDialog->getTextEditorContents ("name"));
+            juce::MessageManager::callAsync ([safe]
             {
                 if (safe != nullptr) safe->saveDialog.reset();
             });
