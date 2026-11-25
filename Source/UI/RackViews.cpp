@@ -134,8 +134,14 @@ void SlotView::rebuildPanel()
 
 void SlotView::refresh()
 {
-    if (proc.getSlotType (slot) != shownType)
-        rebuildPanel();
+    const int t = proc.getSlotType (slot);
+    if (t != shownType)
+    {
+        stableTicks = (t == pendingShow) ? stableTicks + 1 : 0;
+        pendingShow = t;
+        if (stableTicks >= 2)
+            rebuildPanel();
+    }
     if (panel) panel->refresh();
 }
 

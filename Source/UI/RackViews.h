@@ -55,7 +55,7 @@ private:
 
     MultiRackProcessor& proc;
     juce::Component* popupParent;
-    int shownType = -1;
+    int shownType = -1, pendingShow = -1, stableTicks = 0;
     bool dropHover = false;
 
     IconButton power { IconButton::Icon::Power, "Module on/off" };

@@ -261,7 +261,7 @@ ModulePanel::ModulePanel (MultiRackProcessor& p, int s, int t, juce::Component* 
 
             if (spec.unit == Unit::Choice && spec.numChoices() > 1)
             {
-                k.setNormalisableRange ({ 0.0, 1.0, 1.0 / (double) (spec.numChoices() - 1) });
+                k.numSteps = spec.numChoices();
                 k.setMouseDragSensitivity (60 * spec.numChoices());
             }
             k.setDoubleClickReturnValue (true, spec.defaultNorm());
@@ -325,7 +325,7 @@ void ModulePanel::paint (juce::Graphics& g)
 
     if (! cache.isValid() || cache.getWidth() != w || cache.getHeight() != h)
     {
-        cache = juce::Image (juce::Image::ARGB, juce::jmax (1, w), juce::jmax (1, h), true);
+        cache = juce::Image (juce::Image::ARGB, juce::jmax (1, w), juce::jmax (1, h), true, juce::SoftwareImageType());
         juce::Graphics cg (cache);
         cg.addTransform (juce::AffineTransform::scale (scale));
         paintFaceplate (cg, info, getLocalBounds().toFloat(), type, false);

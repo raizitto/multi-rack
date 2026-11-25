@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "LookAndFeel.h"
+#include <cmath>
 
 namespace mr::ui
 {
@@ -20,6 +21,14 @@ public:
     void setChoices (const juce::StringArray& c) { choices = c; getProperties().set ("steps", c.size()); }
 
     juce::StringArray choices;
+    int numSteps = 0;   // > 1: user drags snap to this many positions
+
+    double snapValue (double attempted, DragMode) override
+    {
+        if (numSteps > 1)
+            return std::round (attempted * (numSteps - 1)) / (double) (numSteps - 1);
+        return attempted;
+    }
 
     // Macro display (normalised values)
     int macro = -1;

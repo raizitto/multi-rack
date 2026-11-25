@@ -154,7 +154,13 @@ void RackLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w, 
     auto area = juce::Rectangle<float> ((float) x, (float) y, (float) w, (float) h);
     const float angle = startAngle + pos * (endAngle - startAngle);
 
-    if (style == "selector") { drawSelector (g, area, angle, slider, pos, startAngle, endAngle); return; }
+    if (style == "selector")
+    {
+        const int steps = juce::jmax (2, (int) slider.getProperties().getWithDefault ("steps", 2));
+        const float snapped = (float) juce::roundToInt (pos * (float) (steps - 1)) / (float) (steps - 1);
+        drawSelector (g, area, startAngle + snapped * (endAngle - startAngle), slider, snapped, startAngle, endAngle);
+        return;
+    }
     if (style == "dial")     { drawDial (g, area, angle, slider, startAngle, endAngle); return; }
     if (style == "macro" || style == "mini") { drawMacroKnob (g, area, pos, angle, startAngle, endAngle, slider); return; }
 

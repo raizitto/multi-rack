@@ -53,6 +53,13 @@ MultiRackProcessor::MultiRackProcessor()
         macroNames[(size_t) m] = "Macro " + juce::String (m + 1);
     }
 
+    osMain = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
+                                                               juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+    osSide = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
+                                                               juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+    latency = juce::roundToInt (osMain->getLatencyInSamples());
+    setLatencySamples (latency);
+
     inGainRaw  = apvts.getRawParameterValue ("input");
     outGainRaw = apvts.getRawParameterValue ("output");
     mixRaw     = apvts.getRawParameterValue ("mix");
@@ -177,13 +184,6 @@ void MultiRackProcessor::prepareToPlay (double sampleRate, int)
     scWork.setSize (2, kSubBlock);
     dryWork.setSize (2, kSubBlock);
 
-    if (osMain == nullptr)
-    {
-        osMain = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
-                                                                   juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
-        osSide = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
-                                                                   juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
-    }
     osMain->initProcessing ((size_t) kSubBlock);
     osSide->initProcessing ((size_t) kSubBlock);
 
