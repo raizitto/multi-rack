@@ -191,9 +191,12 @@ def analyze(dry, wet, rate):
             mag = db(H)
             resp = smooth_response(freqs, mag, points)
             ref1k = resp[points.index(1000)]
+            fine_pts = [round(float(f), 1) for f in 20.0 * 2 ** (np.arange(0, 120) / 12.0) if f <= 18000]
+            fine = smooth_response(freqs, mag, fine_pts)
             report[name] = {"level_dbfs": info["level"],
                             "gain_at_1k_db": round(ref1k, 2),
-                            "response_db_rel_1k": {str(f): round(v - ref1k, 2) for f, v in zip(points, resp)}}
+                            "response_db_rel_1k": {str(f): round(v - ref1k, 2) for f, v in zip(points, resp)},
+                            "response_fine_db": {str(f): round(v, 2) for f, v in zip(fine_pts, fine)}}
             curves[name] = (points, [v - ref1k for v in resp], ref1k)
 
         elif name.startswith("steps"):

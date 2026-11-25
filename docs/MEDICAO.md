@@ -38,7 +38,20 @@ Dicas:
 - Se o plugin tiver oversampling/HQ, meça com a mesma opção que você usa normalmente e anote qual foi.
 - Não precisa exportar o sinal "seco": o analisador gera a referência sozinho.
 
-## Como me enviar
+## Como me enviar (recomendado: só os relatórios)
+
+Cada WAV tem ~21 MB, então o mais prático é analisar no seu PC e enviar só os relatórios (poucos KB):
+
+1. Baixe o repositório (**Code → Download ZIP**) e abra a pasta `tools/measure`.
+2. Instale o Python (https://www.python.org/downloads/, marque **Add python.exe to PATH**).
+3. Coloque os WAVs exportados na pasta `tools/measure` (ou arraste a pasta com os WAVs sobre o `analisar_tudo.bat`)
+   e dê **duplo clique** em `analisar_tudo.bat`.
+4. Envie os `*_report.json` e `*_report.png` para a pasta [`measurements/`](../measurements)
+   (**Add file → Upload files → Commit changes**).
+
+O plano de quais configurações exportar está em [`measurements/PLANO.md`](../measurements/PLANO.md).
+
+## Alternativa: enviar os WAVs
 
 No GitHub, abra a pasta [`measurements/`](../measurements) → **Add file → Upload files**,
 arraste os WAVs (cada um tem ~21 MB, dentro do limite de 25 MB do upload pelo site) e clique em **Commit changes**.
