@@ -16,7 +16,7 @@ controle vários parâmetros ao mesmo tempo com **8 macros** e compare configura
 | **Reordenar** | Arraste o nome do slot ou a aba inferior para outro slot |
 | **8 Macros** | Botão direito em qualquer knob → *Assign to macro*. Faixa (início/fim/inverter) configurável. Renomeáveis (duplo clique) |
 | **A/B, Undo/Redo** | Comparação A/B e histórico de 64 passos |
-| **HQ** | Oversampling 4x (FIR de fase linear) em toda a cadeia, com compensação de latência reportada ao host |
+| **HQ** | Oversampling 4x (FIR de fase linear) em toda a cadeia. Latência constante de ~61 amostras (≈1,3 ms a 48 kHz), compensada automaticamente pelo FL Studio, ligando ou desligando o HQ |
 | **Global** | Input, Output e Mix (dry/wet paralelo alinhado em fase) + medidores |
 | **Side-chain externo** | Bus de side-chain estéreo para Bus Comp, Stress Comp, Opto Comp e Gate (botão *EXT S/C*) |
 | **Presets** | 14 racks de fábrica + presets do usuário (`Documentos\Multi Rack\Presets\*.mrpreset`), importar/exportar |

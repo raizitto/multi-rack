@@ -65,23 +65,26 @@ int main (int argc, char** argv)
     proc.prepareToPlay (48000.0, 512);
 
     //== 1. Null test: empty rack is bit transparent ==========================
-    std::cout << "[1] empty rack transparency" << std::endl;
+    std::cout << "[1] empty rack transparency (latency " << proc.getLatencySamples() << ")" << std::endl;
     proc.clearRack();
+    CHECK (proc.getLatencySamples() > 0, "constant latency reported");
     {
-        juce::AudioBuffer<float> buf (4, 512), ref (4, 512);
+        const int lat = proc.getLatencySamples();
+        juce::AudioBuffer<float> buf (4, 512);
         juce::MidiBuffer midi;
-        float maxErr = 0;
+        std::vector<float> in, out;
         for (int b = 0; b < 20; ++b)
         {
             fillSignal (buf, rng, 0.5f, b * 512);
-            ref.makeCopyOf (buf);
+            for (int i = 0; i < 512; ++i) in.push_back (buf.getSample (0, i));
             proc.processBlock (buf, midi);
-            for (int c = 0; c < 2; ++c)
-                for (int i = 0; i < 512; ++i)
-                    maxErr = std::max (maxErr, std::abs (buf.getSample (c, i) - ref.getSample (c, i)));
+            for (int i = 0; i < 512; ++i) out.push_back (buf.getSample (0, i));
         }
+        float maxErr = 0;
+        for (size_t i = 2048; i < out.size(); ++i)
+            maxErr = std::max (maxErr, std::abs (out[i] - in[i - (size_t) lat]));
         std::cout << "  max error " << maxErr << std::endl;
-        CHECK (maxErr < 1.0e-6f, "empty rack should be transparent");
+        CHECK (maxErr < 1.0e-6f, "empty rack should be transparent (delayed by latency)");
     }
 
     //== 2. Every module, random parameters, normal + HQ ======================
@@ -90,8 +93,7 @@ int main (int argc, char** argv)
         setParam (proc, "hq", (float) hq);
         run (proc, 2, 0.1f, rng);
         std::cout << "[2] all modules, random params, HQ=" << hq << " latency=" << proc.getLatencySamples() << std::endl;
-        if (hq) CHECK (proc.getLatencySamples() > 0, "HQ should report latency");
-        else    CHECK (proc.getLatencySamples() == 0, "normal mode has no latency");
+        CHECK (proc.getLatencySamples() > 0, "latency is constant in both modes");
 
         for (int t = 1; t < numModuleTypes(); ++t)
         {
@@ -190,6 +192,7 @@ int main (int argc, char** argv)
     proc.setMacroRange (0, 0, 0.5f, 0.0f); // 0 dB -> -24 dB
     setParam (proc, macroId (0), 1.0f);
     {
+        run (proc, 2, 0.5f, rng); // flush latency buffers
         auto st = run (proc, 20, 0.5f, rng);
         std::cout << "  macro at 100% -> peak " << st.peak << std::endl;
         CHECK (st.peak < 0.05f, "macro should pull trimmer gain to -24 dB");
@@ -235,6 +238,46 @@ int main (int argc, char** argv)
         juce::PNGImageFormat png;
         CHECK (png.writeImageToStream (img, fos), "write png");
         std::cout << "  wrote " << out.getFullPathName() << std::endl;
+    }
+
+    //== 10. Editor automation stress (random params incl. module types, audio on another thread)
+    std::cout << "[10] editor automation stress" << std::endl;
+    {
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        std::atomic<bool> stop { false };
+        std::thread audio ([&]
+        {
+            juce::Random r2 (99);
+            while (! stop.load())
+            {
+                for (auto* prm : proc.getParameters()) prm->setValue (r2.nextFloat());
+                run (proc, 1, 0.3f, r2, 64 + r2.nextInt (900));
+            }
+        });
+        std::thread automation ([&]
+        {
+            juce::Random r3 (7);
+            auto params = proc.getParameters();
+            for (int k = 0; k < 4000 && ! stop.load(); ++k)
+            {
+                auto* prm = params[r3.nextInt (params.size())];
+                prm->beginChangeGesture();
+                prm->setValueNotifyingHost (r3.nextFloat());
+                prm->endChangeGesture();
+                (void) prm->getText (prm->getValue(), 64);
+                if (k % 20 == 0) juce::Thread::sleep (1);
+            }
+        });
+        for (int i = 0; i < 150; ++i)
+        {
+            auto* prm = proc.getParameters()[rng.nextInt (proc.getParameters().size())];
+            prm->setValueNotifyingHost (rng.nextFloat());
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (20);
+        }
+        automation.join();
+        stop = true;
+        audio.join();
+        ed.reset();
     }
 
     std::cout << (failures == 0 ? "ALL TESTS PASSED" : "TESTS FAILED: " + std::to_string (failures)) << std::endl;

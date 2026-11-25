@@ -177,12 +177,21 @@ void MultiRackProcessor::prepareToPlay (double sampleRate, int)
     scWork.setSize (2, kSubBlock);
     dryWork.setSize (2, kSubBlock);
 
-    osMain = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
-                                                               juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
-    osSide = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
-                                                               juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+    if (osMain == nullptr)
+    {
+        osMain = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
+                                                                   juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+        osSide = std::make_unique<juce::dsp::Oversampling<float>> (2, kOversampleLog2,
+                                                                   juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+    }
     osMain->initProcessing ((size_t) kSubBlock);
     osSide->initProcessing ((size_t) kSubBlock);
+
+    // Constant latency (the HQ oversampling latency) whether HQ is on or off, so toggling HQ never
+    // has to ask the host to re-negotiate latency from the audio thread.
+    latency = juce::roundToInt (osMain->getLatencyInSamples());
+    setLatencySamples (latency);
+    wetDelay.allocate (1024);
 
     dryDelay.allocate (1024);
 
@@ -215,13 +224,7 @@ void MultiRackProcessor::setRunRate (bool hq)
     if (osMain != nullptr) osMain->reset();
     if (osSide != nullptr) osSide->reset();
     dryDelay.reset();
-
-    const int newLatency = (hq && osMain != nullptr) ? juce::roundToInt (osMain->getLatencyInSamples()) : 0;
-    if (newLatency != latency || ! prepared)
-    {
-        latency = newLatency;
-        setLatencySamples (latency);
-    }
+    wetDelay.reset();
 }
 
 //==============================================================================
@@ -332,6 +335,14 @@ void MultiRackProcessor::processSubBlock (juce::AudioBuffer<float>& buffer, int 
             scR = scWork.getReadPointer (1);
         }
         runRack (wl, wr, scL, scR, num);
+
+        // keep the same latency as HQ mode
+        for (int i = 0; i < num; ++i)
+        {
+            wetDelay.push (wl[i], wr[i]);
+            wl[i] = wetDelay.read (0, (float) latency);
+            wr[i] = wetDelay.read (1, (float) latency);
+        }
     }
 
     // Output gain, global mix, output meter

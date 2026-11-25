@@ -137,7 +137,7 @@ private:
     static constexpr int kOversampleLog2 = 2; // 4x in HQ
     juce::AudioBuffer<float> work, scWork, dryWork;
     std::unique_ptr<juce::dsp::Oversampling<float>> osMain, osSide;
-    mr::dsp::DelayLine dryDelay;
+    mr::dsp::DelayLine dryDelay, wetDelay;
     mr::dsp::Ramp inRamp, outRamp, mixRamp;
     double baseRate = 44100.0;
     bool hqActive = false;
