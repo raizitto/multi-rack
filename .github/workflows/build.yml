@@ -3,9 +3,10 @@ name: Build
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
+  release:
+    types: [ published ]
 
 permissions:
   contents: write
@@ -83,8 +84,8 @@ jobs:
           path: pluginval-logs
           if-no-files-found: ignore
 
-      - name: Publish release (tags v*)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Attach zip to the GitHub release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: MultiRack-Windows-x64.zip

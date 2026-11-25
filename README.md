@@ -85,7 +85,7 @@ O plugin fica em `build/MultiRack_artefacts/Release/VST3/Multi Rack.vst3`.
 
 O GitHub Actions (`.github/workflows/build.yml`) compila o VST3 no Windows a cada push, valida com o
 [pluginval](https://github.com/Tracktion/pluginval) em strictness 10, roda os testes de DSP/estado/UI no Linux e publica o zip.
-Para criar uma release: `git tag v1.0.0 && git push --tags`.
+Para criar uma release: no GitHub, **Releases → Draft a new release**, crie a tag (ex.: `v1.0.0`) e clique em **Publish release**. O workflow compila, valida e anexa `MultiRack-Windows-x64.zip` à release automaticamente.
 
 ### Testes
 
