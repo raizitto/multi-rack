@@ -1,5 +1,6 @@
 // Offline test harness for Multi Rack: exercises every module, presets, HQ mode, state, undo and renders the UI.
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_audio_formats/juce_audio_formats.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -50,9 +51,75 @@ static void setParam (MultiRackProcessor& p, const juce::String& id, float norm)
     p.apvts.getParameter (id)->setValueNotifyingHost (norm);
 }
 
+/** Render a WAV through one Multi Rack module.
+    MultiRackTest --render in.wav out.wav <moduleId> [paramIndex=realValue ...] [hq] */
+static int renderFile (int argc, char** argv)
+{
+    if (argc < 5) { std::cout << "usage: --render in.wav out.wav moduleId [index=value ...] [hq]" << std::endl; return 2; }
+    juce::AudioFormatManager fm;
+    fm.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> reader (fm.createReaderFor (juce::File::getCurrentWorkingDirectory().getChildFile (argv[2])));
+    if (reader == nullptr) { std::cout << "cannot read " << argv[2] << std::endl; return 1; }
+
+    const int n = (int) reader->lengthInSamples;
+    juce::AudioBuffer<float> in (2, n);
+    reader->read (&in, 0, n, 0, true, true);
+
+    MultiRackProcessor proc;
+    juce::AudioProcessor::BusesLayout layout;
+    layout.inputBuses.add (juce::AudioChannelSet::stereo());
+    layout.inputBuses.add (juce::AudioChannelSet::disabled());
+    layout.outputBuses.add (juce::AudioChannelSet::stereo());
+    proc.setBusesLayout (layout);
+    proc.prepareToPlay (reader->sampleRate, 512);
+    proc.clearRack();
+
+    const int type = findModuleById (argv[4]);
+    if (type == 0) { std::cout << "unknown module " << argv[4] << std::endl; return 1; }
+    proc.setSlotModule (0, type);
+    const auto& info = getModules()[(size_t) type];
+    for (int a = 5; a < argc; ++a)
+    {
+        const juce::String arg (argv[a]);
+        if (arg == "hq") { proc.apvts.getParameter ("hq")->setValueNotifyingHost (1.0f); continue; }
+        const int idx = arg.upToFirstOccurrenceOf ("=", false, false).getIntValue();
+        const float val = arg.fromFirstOccurrenceOf ("=", false, false).getFloatValue();
+        if (idx >= 0 && idx < (int) info.params.size())
+        {
+            proc.getKnobParam (0, idx)->setValueNotifyingHost (info.params[(size_t) idx].toNorm (val));
+            std::cout << "  " << info.params[(size_t) idx].name << " = " << info.params[(size_t) idx].formatReal (val) << std::endl;
+        }
+    }
+
+    juce::AudioBuffer<float> out (2, n);
+    juce::AudioBuffer<float> block (4, 512);
+    juce::MidiBuffer midi;
+    for (int pos = 0; pos < n; pos += 512)
+    {
+        const int len = juce::jmin (512, n - pos);
+        block.setSize (4, len, false, false, true);
+        block.clear();
+        for (int c = 0; c < 2; ++c) block.copyFrom (c, 0, in, c, pos, len);
+        proc.processBlock (block, midi);
+        for (int c = 0; c < 2; ++c) out.copyFrom (c, pos, block, c, 0, len);
+    }
+
+    auto outFile = juce::File::getCurrentWorkingDirectory().getChildFile (argv[3]);
+    outFile.deleteFile();
+    juce::WavAudioFormat wav;
+    std::unique_ptr<juce::AudioFormatWriter> writer (wav.createWriterFor (new juce::FileOutputStream (outFile), reader->sampleRate, 2, 32, {}, 0));
+    if (writer == nullptr) { std::cout << "cannot write " << argv[3] << std::endl; return 1; }
+    writer->writeFromAudioSampleBuffer (out, 0, n);
+    std::cout << "rendered " << info.name << " -> " << outFile.getFullPathName() << std::endl;
+    return 0;
+}
+
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    if (argc > 1 && juce::String (argv[1]) == "--render")
+        return renderFile (argc, argv);
+
     juce::Random rng (1234);
 
     MultiRackProcessor proc;

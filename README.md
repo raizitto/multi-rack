@@ -87,6 +87,11 @@ O GitHub Actions (`.github/workflows/build.yml`) compila o VST3 no Windows a cad
 [pluginval](https://github.com/Tracktion/pluginval) em strictness 10, roda os testes de DSP/estado/UI no Linux e publica o zip.
 Para criar uma release: no GitHub, **Releases → Draft a new release**, crie a tag (ex.: `v1.0.0`) e clique em **Publish release**. O workflow compila, valida e anexa `MultiRack-Windows-x64.zip` à release automaticamente.
 
+### Medir um plugin de referência
+
+Para comparar o som de um módulo com outro plugin que você tem instalado, há um kit de medição
+(sinal de teste + analisador) em `tools/measure/`. Veja o guia em [docs/MEDICAO.md](docs/MEDICAO.md).
+
 ### Testes
 
 ```bash
