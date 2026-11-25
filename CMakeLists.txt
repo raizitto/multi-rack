@@ -69,6 +69,12 @@ target_link_libraries(MultiRack
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
 
+if(MSVC)
+    # Keep debug symbols (.pdb) in Release so crash reports have readable stack traces.
+    target_compile_options(MultiRack PRIVATE $<$<CONFIG:Release>:/Zi>)
+    target_link_options(MultiRack PUBLIC $<$<CONFIG:Release>:/DEBUG /OPT:REF /OPT:ICF>)
+endif()
+
 # Optional offline test harness: -DMR_BUILD_TESTS=ON
 option(MR_BUILD_TESTS "Build the offline DSP/UI test harness" OFF)
 if(MR_BUILD_TESTS)

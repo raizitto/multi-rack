@@ -268,11 +268,14 @@ int main (int argc, char** argv)
                 if (k % 20 == 0) juce::Thread::sleep (1);
             }
         });
+        ed->setSize (MultiRackEditor::kBaseW, MultiRackEditor::kBaseH);
         for (int i = 0; i < 150; ++i)
         {
             auto* prm = proc.getParameters()[rng.nextInt (proc.getParameters().size())];
             prm->setValueNotifyingHost (rng.nextFloat());
             juce::MessageManager::getInstance()->runDispatchLoopUntil (20);
+            if (i % 3 == 0) // paint everything, like a visible window would
+                (void) ed->createComponentSnapshot (ed->getLocalBounds(), true, (i % 2) ? 1.0f : 1.5f);
         }
         automation.join();
         stop = true;
